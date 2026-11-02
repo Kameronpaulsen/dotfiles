@@ -31,8 +31,12 @@ config.background = {
 -- Cells that apps paint with their own background (selections, popups, tmux bar) stay a bit see-through too
 config.text_background_opacity = 0.95
 
--- Background blur (Wayland compositors that support it, e.g. KDE); on GNOME use the "Blur my Shell" extension
-config.wayland_window_background_blur = true
+-- Background blur: macOS takes a blur radius; KDE has its own option (on GNOME use the "Blur my Shell" extension)
+if wezterm.target_triple:find("apple") then
+  config.macos_window_background_blur = 20
+else
+  config.kde_window_background_blur = true
+end
 
 -- Airy padding, like content floating inside a glass pane
 config.window_padding = { left = 10, right = 10, top = 6, bottom = 4 }
