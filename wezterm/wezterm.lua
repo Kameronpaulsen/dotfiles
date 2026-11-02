@@ -51,7 +51,7 @@ config.text_background_opacity = 0.95
 if wezterm.target_triple:find("apple") then
   config.macos_window_background_blur = 20
 else
-  config.kde_window_background_blur = true
+  config.wayland_window_background_blur = true
 end
 
 -- Airy padding, like content floating inside a glass pane
