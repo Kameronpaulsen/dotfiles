@@ -85,4 +85,27 @@ config.colors = {
 }
 config.use_fancy_tab_bar = false
 
+-- ---- Normal copy/paste (Linux/Windows only; macOS already has Cmd+C / Cmd+V) ----
+-- Ctrl+C copies when text is selected, otherwise sends a normal Ctrl+C (interrupt).
+-- Ctrl+V pastes from the system clipboard (in nvim, use Ctrl+Q for visual block mode).
+-- With tmux mouse mode on, hold Shift while dragging to make a WezTerm selection.
+if not wezterm.target_triple:find("apple") then
+  config.keys = {
+    {
+      key = "c",
+      mods = "CTRL",
+      action = wezterm.action_callback(function(window, pane)
+        local sel = window:get_selection_text_for_pane(pane)
+        if sel and sel ~= "" then
+          window:perform_action(wezterm.action.CopyTo("ClipboardAndPrimarySelection"), pane)
+          window:perform_action(wezterm.action.ClearSelection, pane)
+        else
+          window:perform_action(wezterm.action.SendKey({ key = "c", mods = "CTRL" }), pane)
+        end
+      end),
+    },
+    { key = "v", mods = "CTRL", action = wezterm.action.PasteFrom("Clipboard") },
+  }
+end
+
 return config
