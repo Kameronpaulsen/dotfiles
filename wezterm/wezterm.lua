@@ -4,8 +4,22 @@ local config = wezterm.config_builder()
 -- tmux draws the tab bar at the top, so hide WezTerm's own unless you open a second WezTerm tab
 config.hide_tab_bar_if_only_one_tab = true
 
--- Launch straight into tmux: attach to "main", or build it with the Claude / shell / shell layout (see ~/.local/bin/tmux-main)
-config.default_prog = { os.getenv("HOME") .. "/.local/bin/tmux-main" }
+-- Open straight into Claude inside a tmux session named "claude" (attaches if it already exists,
+-- falls back to a shell if Claude exits). -l/-i so PATH (Homebrew tmux, claude) is set up.
+-- The tmux Claude / shell / shell layout is the `dev` command (alias -> ~/.local/bin/tmux-main)
+config.default_cwd = os.getenv("HOME")
+config.default_prog = {
+  "/bin/zsh", "-lic",
+  "tmux new-session -A -s claude -c \"$HOME\" 'claude; exec zsh -l'",
+}
+
+-- Start in native full screen, with the tmux Claude session on top and a plain console below
+wezterm.on("gui-startup", function(cmd)
+  local _, pane, window = wezterm.mux.spawn_window(cmd or {})
+  pane:split({ direction = "Bottom", size = 0.3, args = { "/bin/zsh", "-l" } })
+  pane:activate()
+  window:gui_window():toggle_fullscreen()
+end)
 
 -- ---- Liquid glass look ----
 -- Tokyo Night palette (matches nvim + tmux), with a translucent, tinted "glass" background.

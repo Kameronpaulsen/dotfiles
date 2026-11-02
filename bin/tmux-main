@@ -6,15 +6,28 @@
 #   |    shell    |             |
 #   +-------------+-------------+
 session=main
+# GUI launches (Finder/Spotlight/Dock) get a minimal PATH without Homebrew
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
 dir="$HOME"
 
-if ! tmux has-session -t "$session" 2>/dev/null; then
+build_layout() {
   tmux new-session -d -s "$session" -c "$dir" -x "$(tput cols 2>/dev/null || echo 200)" -y "$(tput lines 2>/dev/null || echo 50)"
   tmux split-window -h -t "$session" -c "$dir"            # right pane, full height
   tmux select-pane -t "$session:.1"                       # back to the left pane
   tmux split-window -v -t "$session:.1" -c "$dir"         # split the left column top/bottom
   tmux send-keys -t "$session:.1" 'claude' Enter          # top-left runs Claude (shell stays if Claude exits)
   tmux select-pane -t "$session:.1"
+}
+
+# Already inside tmux: replace the current session with a fresh one instead of nesting
+if [ -n "$TMUX" ]; then
+  old=$(tmux display-message -p '#{session_id}')
+  tmux rename-session -t "$old" "old-$$"   # free up the name in case we're in "main"
+  build_layout
+  tmux switch-client -t "$session"
+  tmux kill-session -t "$old"
+  exit 0
 fi
 
+tmux has-session -t "$session" 2>/dev/null || build_layout
 exec tmux attach-session -t "$session"
