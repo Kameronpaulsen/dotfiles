@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Attach to the tmux session "main", building the default layout first if it doesn't exist:
+#   +-------------+-------------+
+#   |   claude    |             |
+#   +-------------+    shell    |
+#   |    shell    |             |
+#   +-------------+-------------+
+session=main
+dir="$HOME"
+
+if ! tmux has-session -t "$session" 2>/dev/null; then
+  tmux new-session -d -s "$session" -c "$dir" -x "$(tput cols 2>/dev/null || echo 200)" -y "$(tput lines 2>/dev/null || echo 50)"
+  tmux split-window -h -t "$session" -c "$dir"            # right pane, full height
+  tmux select-pane -t "$session:.1"                       # back to the left pane
+  tmux split-window -v -t "$session:.1" -c "$dir"         # split the left column top/bottom
+  tmux send-keys -t "$session:.1" 'claude' Enter          # top-left runs Claude (shell stays if Claude exits)
+  tmux select-pane -t "$session:.1"
+fi
+
+exec tmux attach-session -t "$session"
