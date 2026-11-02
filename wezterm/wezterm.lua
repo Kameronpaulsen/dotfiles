@@ -25,11 +25,11 @@ config.background = {
     },
     width = "100%",
     height = "100%",
-    opacity = 0.72,
+    opacity = 0.92,
   },
 }
 -- Cells that apps paint with their own background (selections, popups, tmux bar) stay a bit see-through too
-config.text_background_opacity = 0.8
+config.text_background_opacity = 0.95
 
 -- Background blur (Wayland compositors that support it, e.g. KDE); on GNOME use the "Blur my Shell" extension
 config.wayland_window_background_blur = true
