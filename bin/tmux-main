@@ -1,26 +1,41 @@
 #!/usr/bin/env bash
-# Attach to the tmux session "main", building the default layout first if it doesn't exist:
+# Usage: tmux-main | dev [dir]
+# Attach to a tmux session, building the default layout first if it doesn't exist:
 #   +-------------+-------------+
 #   |   claude    |             |
-#   +-------------+    shell    |
+#   +-------------+    nvim     |
 #   |    shell    |             |
 #   +-------------+-------------+
-session=main
+# No dir: session "main" in $HOME (replaces the current session if already inside tmux).
+# With dir: a session named after the directory, all panes opened in it.
 # GUI launches (Finder/Spotlight/Dock) get a minimal PATH without Homebrew
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/bin:$PATH"
-dir="$HOME"
+
+if [ -n "$1" ]; then
+  dir=$(cd "$1" 2>/dev/null && pwd) || { echo "dev: no such directory: $1" >&2; exit 1; }
+  session=$(basename "$dir" | tr '.:' '__')
+else
+  dir="$HOME"
+  session=main
+fi
 
 build_layout() {
   tmux new-session -d -s "$session" -c "$dir" -x "$(tput cols 2>/dev/null || echo 200)" -y "$(tput lines 2>/dev/null || echo 50)"
   tmux split-window -h -t "$session" -c "$dir"            # right pane, full height
+  tmux send-keys -t "$session:.2" 'nvim .' Enter          # right runs nvim (shell stays if nvim exits)
   tmux select-pane -t "$session:.1"                       # back to the left pane
   tmux split-window -v -t "$session:.1" -c "$dir"         # split the left column top/bottom
   tmux send-keys -t "$session:.1" 'claude' Enter          # top-left runs Claude (shell stays if Claude exits)
   tmux select-pane -t "$session:.1"
 }
 
-# Already inside tmux: replace the current session with a fresh one instead of nesting
 if [ -n "$TMUX" ]; then
+  if [ -n "$1" ]; then
+    # Project session: create if needed and switch to it, leaving other sessions alone
+    tmux has-session -t "=$session" 2>/dev/null || build_layout
+    exec tmux switch-client -t "=$session"
+  fi
+  # Already inside tmux: replace the current session with a fresh one instead of nesting
   old=$(tmux display-message -p '#{session_id}')
   tmux rename-session -t "$old" "old-$$"   # free up the name in case we're in "main"
   build_layout
@@ -29,5 +44,5 @@ if [ -n "$TMUX" ]; then
   exit 0
 fi
 
-tmux has-session -t "$session" 2>/dev/null || build_layout
-exec tmux attach-session -t "$session"
+tmux has-session -t "=$session" 2>/dev/null || build_layout
+exec tmux attach-session -t "=$session"
